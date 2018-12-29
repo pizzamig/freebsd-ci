@@ -1,0 +1,20 @@
+[package]
+authors = ["Luca Pizzamiglio <luca.pizzamiglio@gmail.com>"]
+edition = "2018"
+name = "bsd-ci"
+version = "0.1.0"
+[dependencies]
+chrono = "0.4.6"
+derive_is_enum_variant = "0.1"
+env_logger = "0.6"
+failure = "0.1"
+log = "0.4"
+reqwest = "0.9"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"
+structopt = "0.2"
+structopt-flags = "0.2"
+toml = "0.4"
+url = "1.7"
+yaml-rust = "0.4"
