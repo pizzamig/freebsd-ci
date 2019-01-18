@@ -9,11 +9,16 @@ use std::io::Write;
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 use std::process::Command;
+use tera::{Context, Tera};
 
 #[derive(Debug, Fail)]
 pub(crate) enum BuildError {
     #[fail(display = "Missing pot: {}", potname)]
     PotNotPresent { potname: String },
+    #[fail(display = "Tera template parsing error: {}", msg)]
+    TeraTemplateParseErr { msg: String },
+    #[fail(display = "Tera template rendering error: {}", msg)]
+    TeraTemplateRenderingErr { msg: String },
 }
 
 fn generate_build_script(pot_name: &str, _job: &BuildJob) -> Result<(), Error> {
@@ -28,17 +33,23 @@ fn generate_build_script(pot_name: &str, _job: &BuildJob) -> Result<(), Error> {
     let mut permissions = metadata.permissions();
     permissions.set_mode(0o755);
     f.set_permissions(permissions)?;
-    // shebang
-    writeln!(f, "#!/bin/sh\n")?;
-    // environment
-    writeln!(f, "export HOME=/root\n")?;
-    writeln!(f, "export PATH=/root/.cargo/bin:/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin\n")?;
-
-    // build script
-    writeln!(f, "cd /mnt\n")?;
-    writeln!(f, "cargo clippy --release\n")?;
-    writeln!(f, "cargo build --release\n")?;
-    writeln!(f, "cargo test --release\n")?;
+    let tera = match Tera::new("templates/*") {
+        Ok(t) => t,
+        Err(e) => {
+            return Err(Error::from(BuildError::TeraTemplateParseErr {
+                msg: format!("{}", e),
+            }));
+        }
+    };
+    let script = match tera.render("build.sh", &Context::new()) {
+        Ok(s) => s,
+        Err(e) => {
+            return Err(Error::from(BuildError::TeraTemplateRenderingErr {
+                msg: format!("{}", e),
+            }));
+        }
+    };
+    write!(f, "{}", script)?;
     Ok(())
 }
 
