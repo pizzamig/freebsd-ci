@@ -89,7 +89,7 @@ pub(crate) fn is_pot_present(potname: &str) -> bool {
     }
 }
 
-fn _destroy_fscomp(fscompname: &str) -> Result<(), Error> {
+pub(crate) fn destroy_fscomp(fscompname: &str) -> Result<(), Error> {
     let output = Command::new("pot")
         .args(&["destroy", "-f", &fscompname])
         .output()?;
@@ -192,7 +192,7 @@ pub(crate) fn fetch_git_in_fscomp(
         println!("fscomp {} found", fscomp_name);
         if config.force_flag {
             /* Delete the fscomp */
-            _destroy_fscomp(&fscomp_name)?;
+            destroy_fscomp(&fscomp_name)?;
             println!("fscomp {} destroyed", fscomp_name);
         } else {
             return Err(Error::from(PotError::FscompAlreadyPresent {

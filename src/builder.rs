@@ -1,5 +1,6 @@
 use crate::pot::{
-    destroy_pot, get_pot_path, is_pot_present, revert_fscomp, spawn_builder_pot, PotError,
+    destroy_fscomp, destroy_pot, get_pot_path, is_pot_present, revert_fscomp, spawn_builder_pot,
+    PotError,
 };
 use crate::{BuildJob, Opt, Project};
 use failure::{Error, Fail};
@@ -83,9 +84,9 @@ fn run_build_script(pot_name: &str) -> Result<(), Error> {
 }
 
 pub(crate) fn build(queue: &[BuildJob], prj: &Project, config: &Opt) -> Result<(), Error> {
+    let fscomp_name = prj.to_string();
     for b in queue {
         let image_name = b.to_string();
-        let fscomp_name = prj.to_string();
         if !is_pot_present(&image_name) {
             return Err(Error::from(BuildError::PotNotPresent {
                 potname: image_name,
@@ -107,5 +108,7 @@ pub(crate) fn build(queue: &[BuildJob], prj: &Project, config: &Opt) -> Result<(
         revert_fscomp(&fscomp_name)?;
         debug!("Revert fscomp : {}", fscomp_name);
     }
+    // destroy the fscomp
+    destroy_fscomp(&fscomp_name)?;
     Ok(())
 }
