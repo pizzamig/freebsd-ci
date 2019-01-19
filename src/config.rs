@@ -8,24 +8,11 @@ use std::path::Path;
 #[derive(Debug, Deserialize)]
 pub(crate) struct Config {
     pub(crate) tokens: Tokens,
-    pub(crate) projects: Vec<Project>,
 }
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct Tokens {
     pub(crate) github: String,
-}
-
-#[derive(Debug, Deserialize)]
-pub(crate) struct Project {
-    pub(crate) owner: String,
-    pub(crate) project: String,
-}
-
-impl ToString for Project {
-    fn to_string(&self) -> String {
-        format!("{}__{}", self.owner, self.project)
-    }
 }
 
 pub(crate) fn get_config(path: &Path) -> Result<Config, Error> {

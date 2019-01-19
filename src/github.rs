@@ -1,4 +1,4 @@
-use crate::config::Project;
+use crate::Project;
 use failure::Error;
 use log::debug;
 use log::trace;

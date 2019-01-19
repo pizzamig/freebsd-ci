@@ -5,7 +5,6 @@ mod github;
 mod pot;
 mod yaml;
 use crate::builder::build;
-use crate::config::Project;
 use crate::error::ParseError;
 use crate::github::get_status;
 use crate::yaml::{get_build_lang, get_build_os, get_lang, get_os, get_yaml};
@@ -26,6 +25,12 @@ struct Opt {
     /// A Flag to force operations
     #[structopt(short = "-f")]
     force_flag: bool,
+    /// Github project name
+    #[structopt(short = "-P", long = "--project")]
+    project_name: String,
+    /// Github user name
+    #[structopt(short = "-U", long = "--user-name")]
+    user_name: String,
 }
 
 #[derive(Debug, Clone)]
@@ -59,6 +64,18 @@ impl ToString for BuildJob {
     }
 }
 
+#[derive(Debug)]
+pub(crate) struct Project {
+    pub(crate) owner: String,
+    pub(crate) project: String,
+}
+
+impl ToString for Project {
+    fn to_string(&self) -> String {
+        format!("{}__{}", self.owner, self.project)
+    }
+}
+
 fn main() -> Result<(), Error> {
     let opt = Opt::from_args();
     env_logger::try_init()?;
@@ -75,7 +92,10 @@ fn main() -> Result<(), Error> {
             .unwrap_or("Filename not convertible")
     );
     let config = crate::config::get_config(&opt.configfile)?;
-    let prj = config.projects.first().unwrap();
+    let prj = Project {
+        owner: opt.user_name.clone(),
+        project: opt.project_name.clone(),
+    };
     let (rs, _) = get_status(&prj, &config.tokens.github)?;
     println!("{:?}", rs);
     /* fetch the repo to read the .bsd-ci file */
@@ -96,7 +116,7 @@ fn main() -> Result<(), Error> {
             _ => {
                 return Err(Error::from(ParseError::GenericError {
                     msg: "language not supported".to_string(),
-                }))
+                }));
             }
         };
         let build_os = match os.as_ref() {
@@ -104,7 +124,7 @@ fn main() -> Result<(), Error> {
             _ => {
                 return Err(Error::from(ParseError::GenericError {
                     msg: "os not supported".to_string(),
-                }))
+                }));
             }
         };
         for o in &build_os {
@@ -120,7 +140,7 @@ fn main() -> Result<(), Error> {
         info!("{:?}", build_os);
         println!("{:?}", build_queue);
     }
-    build(&build_queue, prj, &opt)?;
+    build(&build_queue, &prj, &opt)?;
     Ok(())
 }
 
