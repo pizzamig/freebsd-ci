@@ -1,7 +1,7 @@
 [package]
-authors = ["Luca Pizzamiglio <luca.pizzamiglio@gmail.com>"]
+authors = ["Luca Pizzamiglio <pizzamig@FreeBSD.org>"]
 edition = "2018"
-name = "bsd-ci"
+name = "freebsd-ci"
 version = "0.1.0"
 [dependencies]
 chrono = "0.4.6"
