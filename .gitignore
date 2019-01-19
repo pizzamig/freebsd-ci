@@ -1,4 +1,4 @@
 /target
 **/*.rs.bk
 *.swp
-bsd-ci.conf
+freebsd-ci.conf

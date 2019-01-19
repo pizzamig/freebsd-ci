@@ -20,7 +20,7 @@ struct Opt {
     #[structopt(flatten)]
     verbose: structopt_flags::SimpleVerbose,
     /// The pathname to the toml configuration file
-    #[structopt(short = "-c", parse(from_os_str), default_value = "./bsd-ci.conf")]
+    #[structopt(short = "-c", parse(from_os_str), default_value = "./freebsd-ci.conf")]
     configfile: PathBuf,
     /// A Flag to force operations
     #[structopt(short = "-f")]
