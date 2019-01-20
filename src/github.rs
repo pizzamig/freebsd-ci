@@ -1,9 +1,15 @@
 use crate::Project;
-use failure::Error;
+use failure::{Error, Fail};
 use log::debug;
 use log::trace;
 use reqwest::header;
 use serde_derive::Deserialize;
+
+#[derive(Debug, Fail)]
+pub(crate) enum GithubError {
+    #[fail(display = "Tag {} not found", tagname)]
+    TagNotPresent { tagname: String },
+}
 
 #[derive(Debug, Deserialize)]
 struct ReplyData {
@@ -40,6 +46,12 @@ pub(crate) struct RepoStatus {
     pub url: url::Url,
     pub update_at: chrono::DateTime<chrono::offset::FixedOffset>,
     pub email: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct ReleaseJson {
+    id: u64,
+    tag_name: String,
 }
 
 fn get_req_remaining(h: &header::HeaderMap) -> u32 {
@@ -84,4 +96,58 @@ pub(crate) fn get_status(prj: &Project, token: &str) -> Result<(RepoStatus, u32)
         email: rs.data.user.email,
     };
     Ok((rs, req_left))
+}
+
+fn _get_release_id_from_json(tag: &str, json: &str) -> Result<u64, Error> {
+    let rss: Vec<ReleaseJson> = serde_json::from_str(json)?;
+    if let Some(found) = rss.iter().find(|x| x.tag_name == tag) {
+        Ok(found.id)
+    } else {
+        Err(Error::from(GithubError::TagNotPresent {
+            tagname: tag.to_string(),
+        }))
+    }
+}
+
+pub(crate) fn get_release_id(prj: &Project, tag: &str, token: &str) -> Result<(u64, u32), Error> {
+    let mut token_str = "token ".to_string();
+    token_str.push_str(token);
+    let mut h = header::HeaderMap::new();
+    h.insert(reqwest::header::AUTHORIZATION, token_str.parse().unwrap());
+    let url = format!(
+        "https://api.github.com/repos/{}/{}/releases",
+        prj.owner, prj.project
+    );
+    let client = reqwest::Client::builder().default_headers(h).build()?;
+    let mut reply = client.get(&url).send()?;
+    let req_left = get_req_remaining(&reply.headers());
+    let json = reply.text()?;
+    trace!("output is {:?}", json);
+    let release_id = _get_release_id_from_json(tag, &json)?;
+    Ok((release_id, req_left))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_release_id_from_json() {
+        let json = r#"[
+        {
+            "url": "https://api.github.com/repos/pizzamig/ci-test/releases/15076202",
+            "id": 15076202,
+            "tag_name": "0.1.1",
+            "author": {
+              "login": "pizzamig"
+            }
+        },
+        {
+            "id": 15059566,
+            "tag_name": "0.1"
+        }
+        ]"#;
+        let id = _get_release_id_from_json("0.1.1", json).unwrap();
+        assert!(id == 15_076_202);
+    }
 }
