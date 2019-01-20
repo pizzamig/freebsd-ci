@@ -7,7 +7,7 @@ mod yaml;
 use crate::builder::build;
 use crate::error::ParseError;
 use crate::github::get_status;
-use crate::yaml::{get_build_lang, get_build_os, get_lang, get_os, get_yaml};
+use crate::yaml::{get_build_lang, get_build_os, get_lang, get_os, get_update, get_yaml};
 use failure::Error;
 use log::{debug, error, info};
 use std::path::PathBuf;
@@ -76,6 +76,11 @@ impl ToString for Project {
     }
 }
 
+#[derive(Debug, Default)]
+pub(crate) struct BuildOpt {
+    pub(crate) update: bool,
+}
+
 fn main() -> Result<(), Error> {
     let opt = Opt::from_args();
     env_logger::try_init()?;
@@ -104,6 +109,7 @@ fn main() -> Result<(), Error> {
     println!("Git repo fetched in {}", path);
 
     let mut build_queue = Vec::new();
+    let mut build_opt = BuildOpt::default();
     let yaml_string = get_yaml(&path)?;
     let docs = YamlLoader::load_from_str(&yaml_string)?;
     for d in docs {
@@ -127,6 +133,9 @@ fn main() -> Result<(), Error> {
                 }));
             }
         };
+        build_opt.update = get_update(&h)?;
+        info!("{:?}", build_lang);
+        info!("{:?}", build_os);
         for o in &build_os {
             for l in &build_lang {
                 build_queue.push(BuildJob {
@@ -136,11 +145,9 @@ fn main() -> Result<(), Error> {
                 debug!("o {:?} - l {:?}", o, l);
             }
         }
-        info!("{:?}", build_lang);
-        info!("{:?}", build_os);
         println!("{:?}", build_queue);
     }
-    build(&build_queue, &prj, &opt)?;
+    build(&build_queue, &prj, &opt, &build_opt)?;
     Ok(())
 }
 

@@ -2,7 +2,7 @@ use crate::pot::{
     destroy_fscomp, destroy_pot, get_pot_path, is_pot_present, revert_fscomp, spawn_builder_pot,
     PotError,
 };
-use crate::{BuildJob, Opt, Project};
+use crate::{BuildJob, BuildOpt, Opt, Project};
 use failure::{Error, Fail};
 use log::debug;
 use std::fs::File;
@@ -22,7 +22,11 @@ pub(crate) enum BuildError {
     TeraTemplateRenderingErr { msg: String },
 }
 
-fn generate_build_script(pot_name: &str, _job: &BuildJob) -> Result<(), Error> {
+fn generate_build_script(
+    pot_name: &str,
+    job: &BuildJob,
+    build_opt: &BuildOpt,
+) -> Result<(), Error> {
     let pot_path = get_pot_path(pot_name)?;
     let mut file_path = PathBuf::from(&pot_path);
     file_path.push("m");
@@ -42,7 +46,13 @@ fn generate_build_script(pot_name: &str, _job: &BuildJob) -> Result<(), Error> {
             }));
         }
     };
-    let script = match tera.render("build.sh", &Context::new()) {
+    let mut context = Context::new();
+    context.insert("update", &build_opt.update);
+    context.insert("language", &job.lang.lang);
+    context.insert("language_variant", &job.lang.lang_variant);
+    context.insert("os_family", &job.os.os_family);
+    context.insert("os_version", &job.os.os_version);
+    let script = match tera.render("build.sh", &context) {
         Ok(s) => s,
         Err(e) => {
             return Err(Error::from(BuildError::TeraTemplateRenderingErr {
@@ -83,7 +93,12 @@ fn run_build_script(pot_name: &str) -> Result<(), Error> {
     Ok(())
 }
 
-pub(crate) fn build(queue: &[BuildJob], prj: &Project, config: &Opt) -> Result<(), Error> {
+pub(crate) fn build(
+    queue: &[BuildJob],
+    prj: &Project,
+    config: &Opt,
+    build_opt: &BuildOpt,
+) -> Result<(), Error> {
     let fscomp_name = prj.to_string();
     for b in queue {
         let image_name = b.to_string();
@@ -97,7 +112,7 @@ pub(crate) fn build(queue: &[BuildJob], prj: &Project, config: &Opt) -> Result<(
         let pot_name = spawn_builder_pot(&image_name, &fscomp_name, &config)?;
         println!("Spawned new pot: {}", pot_name);
         // run the build
-        generate_build_script(&pot_name, b)?;
+        generate_build_script(&pot_name, b, build_opt)?;
         run_build_script(&pot_name)?;
         // collect the results
         // cleanup

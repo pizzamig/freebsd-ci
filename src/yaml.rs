@@ -2,6 +2,7 @@ use super::{BuildLang, BuildOS};
 use crate::error::ParseError;
 use log::debug;
 use log::error;
+use log::info;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::PathBuf;
@@ -117,6 +118,23 @@ pub(crate) fn get_build_os(
         });
     }
     Ok(result)
+}
+
+pub(crate) fn get_update(h: &yaml_rust::yaml::Hash) -> Result<bool, ParseError> {
+    if let Some(k_update) = h.get(&yaml_rust::Yaml::from_str("update")) {
+        if let Some(update) = k_update.as_bool() {
+            debug!("{:?}", update);
+            return Ok(update);
+        } else {
+            error!("update is not a boolean value");
+            return Err(ParseError::InvalidType {
+                name: "update".to_string(),
+            });
+        }
+    } else {
+        info!("update not found: default to false");
+        return Ok(false);
+    }
 }
 
 #[cfg(test)]
