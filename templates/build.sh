@@ -3,6 +3,11 @@
 export HOME=/root
 export PATH=/root/.cargo/bin:/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin
 
+if {{ update }} ; then
+	rustup update
+	pkg upgrade -y
+fi
+
 cd /mnt
 
 if ! cargo clippy --release ; then
