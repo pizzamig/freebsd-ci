@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -x
 # template variables:
 # language: string : {{ language }}
 #	the language of the build, like rust
@@ -45,13 +45,14 @@ fi
 
 if {{ upload }} ; then
 	cargo install --path . -f
-	gzip_filename="{{ os_family }}-{{ os_version }}-{{ project }}"
-	mv $HOME/.cargo/bin/{{ project }} $gzip_filename
-	gzip -S gz
+	tgt_dir="{{ os_family }}-{{ os_version }}-{{ project }}"
+	tarball="${tgt_dir}.tar.gz"
+	mv $HOME/.cargo/bin/{{ project }} $tgt_dir
+	tar zcf ${tarball} $tgt_dir
 	curl -H "Authorization: bearer {{ token }}"\
 		-H "Content-Type: application/gzip" \
 		-X POST \
-		--data-binary @${gzip_filename}.gz \
-		https://uploads.github.com/repos/{{ user }}/{{ project }}/releases/{{ release_id }}/assets\?name\=${gzip_filename}.gz
+		--data-binary @${tarball} \
+		https://uploads.github.com/repos/{{ user }}/{{ project }}/releases/{{ release_id }}/assets\?name\=${tarball}
 fi
 exit 0
