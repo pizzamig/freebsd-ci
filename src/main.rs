@@ -20,8 +20,21 @@ struct Opt {
     #[structopt(flatten)]
     verbose: structopt_flags::SimpleVerbose,
     /// The pathname to the toml configuration file
-    #[structopt(short = "-c", parse(from_os_str), default_value = "./freebsd-ci.conf")]
+    #[structopt(
+        short = "-c",
+        long = "--config",
+        parse(from_os_str),
+        default_value = "./freebsd-ci.conf"
+    )]
     configfile: PathBuf,
+    /// The pathname to the build-sh template
+    #[structopt(
+        short = "-b",
+        long = "--build",
+        parse(from_os_str),
+        default_value = "./template/build.sh"
+    )]
+    build_template: PathBuf,
     /// A Flag to force operations (i.e. remove fscomp or images with the same name)
     #[structopt(short = "-f", long = "--force")]
     force_flag: bool,

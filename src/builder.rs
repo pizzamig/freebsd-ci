@@ -28,10 +28,25 @@ fn generate_build_script(
     prj: &Project,
     build_opt: &BuildOpt,
     token: &str,
-    render_only: bool,
+    opt: &Opt,
 ) -> Result<(), Error> {
+    let mut template_dir = opt
+        .build_template
+        .parent()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_string();
+    println!("template_dir 1 : {}", template_dir);
+    if &template_dir == "" {
+        template_dir.push_str(".");
+    }
+    println!("template_dir 1 : {}", template_dir);
+    template_dir.push_str("/*");
+    println!("template_dir 3 : {}", template_dir);
+
     // render the template
-    let tera = match Tera::new("templates/*") {
+    let tera = match Tera::new(&template_dir) {
         Ok(t) => t,
         Err(e) => {
             return Err(Error::from(BuildError::TeraTemplateParseErr {
@@ -64,7 +79,7 @@ fn generate_build_script(
             }));
         }
     };
-    if render_only {
+    if opt.render_build_flag {
         println!("{}", script);
     } else {
         // write the script to a file
@@ -133,7 +148,7 @@ pub(crate) fn build(
         let pot_name = spawn_builder_pot(&image_name, &fscomp_name, &opt)?;
         println!("Spawned new pot: {}", pot_name);
         // run the build
-        generate_build_script(&pot_name, b, prj, build_opt, &token, opt.render_build_flag)?;
+        generate_build_script(&pot_name, b, prj, build_opt, &token, opt)?;
         if opt.render_build_flag {
             destroy_pot(&pot_name)?;
             destroy_fscomp(&fscomp_name)?;
