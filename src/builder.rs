@@ -25,19 +25,12 @@ pub(crate) enum BuildError {
 fn generate_build_script(
     pot_name: &str,
     job: &BuildJob,
+    prj: &Project,
     build_opt: &BuildOpt,
+    token: &str,
+    render_only: bool,
 ) -> Result<(), Error> {
-    let pot_path = get_pot_path(pot_name)?;
-    let mut file_path = PathBuf::from(&pot_path);
-    file_path.push("m");
-    file_path.push("root");
-    file_path.push("build.sh");
-    println!("Creating the file {:?}", file_path);
-    let mut f = File::create(&file_path)?;
-    let metadata = f.metadata()?;
-    let mut permissions = metadata.permissions();
-    permissions.set_mode(0o755);
-    f.set_permissions(permissions)?;
+    // render the template
     let tera = match Tera::new("templates/*") {
         Ok(t) => t,
         Err(e) => {
@@ -52,6 +45,17 @@ fn generate_build_script(
     context.insert("language_variant", &job.lang.lang_variant);
     context.insert("os_family", &job.os.os_family);
     context.insert("os_version", &job.os.os_version);
+    context.insert("user", &prj.owner);
+    context.insert("project", &prj.project);
+    if let Some(release_id) = build_opt.release_id {
+        context.insert("upload", &true);
+        context.insert("token", token);
+        context.insert("release_id", &release_id);
+    } else {
+        context.insert("upload", &false);
+        context.insert("token", "");
+        context.insert("release_id", &0);
+    }
     let script = match tera.render("build.sh", &context) {
         Ok(s) => s,
         Err(e) => {
@@ -60,7 +64,23 @@ fn generate_build_script(
             }));
         }
     };
-    write!(f, "{}", script)?;
+    if render_only {
+        println!("{}", script);
+    } else {
+        // write the script to a file
+        let pot_path = get_pot_path(pot_name)?;
+        let mut file_path = PathBuf::from(&pot_path);
+        file_path.push("m");
+        file_path.push("root");
+        file_path.push("build.sh");
+        debug!("Creating the file {:?}", file_path);
+        let mut f = File::create(&file_path)?;
+        let metadata = f.metadata()?;
+        let mut permissions = metadata.permissions();
+        permissions.set_mode(0o755);
+        f.set_permissions(permissions)?;
+        write!(f, "{}", script)?;
+    }
     Ok(())
 }
 
@@ -96,8 +116,9 @@ fn run_build_script(pot_name: &str) -> Result<(), Error> {
 pub(crate) fn build(
     queue: &[BuildJob],
     prj: &Project,
-    config: &Opt,
+    opt: &Opt,
     build_opt: &BuildOpt,
+    token: &str,
 ) -> Result<(), Error> {
     let fscomp_name = prj.to_string();
     for b in queue {
@@ -109,12 +130,16 @@ pub(crate) fn build(
         }
 
         // spawn the container
-        let pot_name = spawn_builder_pot(&image_name, &fscomp_name, &config)?;
+        let pot_name = spawn_builder_pot(&image_name, &fscomp_name, &opt)?;
         println!("Spawned new pot: {}", pot_name);
         // run the build
-        generate_build_script(&pot_name, b, build_opt)?;
+        generate_build_script(&pot_name, b, prj, build_opt, &token, opt.render_build_flag)?;
+        if opt.render_build_flag {
+            destroy_pot(&pot_name)?;
+            destroy_fscomp(&fscomp_name)?;
+            return Ok(());
+        }
         run_build_script(&pot_name)?;
-        // collect the results
         // cleanup
         // // destroy the pot
         destroy_pot(&pot_name)?;

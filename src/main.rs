@@ -6,7 +6,7 @@ mod pot;
 mod yaml;
 use crate::builder::build;
 use crate::error::ParseError;
-use crate::github::get_status;
+use crate::github::{get_release_id, get_status};
 use crate::yaml::{get_build_lang, get_build_os, get_lang, get_os, get_update, get_yaml};
 use failure::Error;
 use log::{debug, error, info};
@@ -22,15 +22,22 @@ struct Opt {
     /// The pathname to the toml configuration file
     #[structopt(short = "-c", parse(from_os_str), default_value = "./freebsd-ci.conf")]
     configfile: PathBuf,
-    /// A Flag to force operations
-    #[structopt(short = "-f")]
+    /// A Flag to force operations (i.e. remove fscomp or images with the same name)
+    #[structopt(short = "-f", long = "--force")]
     force_flag: bool,
+    /// A Flag to rendert the build script only (on stdout)
+    #[structopt(short = "-B", long = "--build-script-only")]
+    render_build_flag: bool,
     /// Github project name
     #[structopt(short = "-P", long = "--project")]
     project_name: String,
     /// Github user name
     #[structopt(short = "-U", long = "--user-name")]
     user_name: String,
+    /// Tag name: Using this option, a tag will be built. If a related release is found,
+    /// the artifacts will be uploaded
+    #[structopt(short = "-T", long = "--tag-name")]
+    tag_name: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -79,6 +86,7 @@ impl ToString for Project {
 #[derive(Debug, Default)]
 pub(crate) struct BuildOpt {
     pub(crate) update: bool,
+    pub(crate) release_id: Option<u64>,
 }
 
 fn main() -> Result<(), Error> {
@@ -110,6 +118,11 @@ fn main() -> Result<(), Error> {
 
     let mut build_queue = Vec::new();
     let mut build_opt = BuildOpt::default();
+    if let Some(tag_name) = &opt.tag_name {
+        if let Ok((release_id, _)) = get_release_id(&prj, tag_name, &config.tokens.github) {
+            build_opt.release_id = Some(release_id);
+        }
+    }
     let yaml_string = get_yaml(&path)?;
     let docs = YamlLoader::load_from_str(&yaml_string)?;
     for d in docs {
@@ -147,7 +160,7 @@ fn main() -> Result<(), Error> {
         }
         println!("{:?}", build_queue);
     }
-    build(&build_queue, &prj, &opt, &build_opt)?;
+    build(&build_queue, &prj, &opt, &build_opt, &config.tokens.github)?;
     Ok(())
 }
 

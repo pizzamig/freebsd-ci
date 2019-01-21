@@ -49,6 +49,13 @@ pub(crate) enum PotError {
         path: String,
         stderr: String,
     },
+    #[fail(display = "Git clone failed from {} to {} with tag {}", url, path, tag)]
+    GitCloneTagFailed {
+        url: String,
+        path: String,
+        tag: String,
+        stderr: String,
+    },
 }
 
 fn _is_fscomp_present(fscompname: &str) -> Result<bool, Error> {
@@ -212,22 +219,45 @@ pub(crate) fn fetch_git_in_fscomp(
         }));
     }
     /* git clone in it */
-    let output = Command::new("git")
-        .args(&[
-            "clone",
-            "--depth",
-            "1",
-            repo_status.url.as_str(),
-            &fscomp_path,
-        ])
-        .output()?;
-    if !output.status.success() {
-        return Err(Error::from(PotError::GitCloneFailed {
-            url: repo_status.url.as_str().to_string(),
-            path: fscomp_path,
-            stderr: String::from_utf8(output.stderr)
-                .unwrap_or_else(|_| "stderr not available".to_string()),
-        }));
+    if let Some(tag) = &config.tag_name {
+        let output = Command::new("git")
+            .args(&[
+                "clone",
+                "--depth",
+                "1",
+                "--branch",
+                tag,
+                repo_status.url.as_str(),
+                &fscomp_path,
+            ])
+            .output()?;
+        if !output.status.success() {
+            return Err(Error::from(PotError::GitCloneTagFailed {
+                url: repo_status.url.as_str().to_string(),
+                path: fscomp_path,
+                tag: tag.to_string(),
+                stderr: String::from_utf8(output.stderr)
+                    .unwrap_or_else(|_| "stderr not available".to_string()),
+            }));
+        }
+    } else {
+        let output = Command::new("git")
+            .args(&[
+                "clone",
+                "--depth",
+                "1",
+                repo_status.url.as_str(),
+                &fscomp_path,
+            ])
+            .output()?;
+        if !output.status.success() {
+            return Err(Error::from(PotError::GitCloneFailed {
+                url: repo_status.url.as_str().to_string(),
+                path: fscomp_path,
+                stderr: String::from_utf8(output.stderr)
+                    .unwrap_or_else(|_| "stderr not available".to_string()),
+            }));
+        }
     }
     /* take a snapshot */
     let output = Command::new("pot")
