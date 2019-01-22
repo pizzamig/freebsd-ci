@@ -10,6 +10,7 @@ use crate::github::{get_release_id, get_status};
 use crate::yaml::{get_build_lang, get_build_os, get_lang, get_os, get_update, get_yaml};
 use failure::Error;
 use log::{debug, error, info};
+use std::fmt::Display;
 use std::path::PathBuf;
 use std::string::ToString;
 use structopt::StructOpt;
@@ -59,17 +60,48 @@ struct BuildLang {
     lang_variant: String,
 }
 
+impl Display for BuildLang {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        writeln!(
+            f,
+            "BuildLang {} (variant: {})",
+            self.lang, self.lang_variant
+        )
+    }
+}
+
 #[derive(Debug, Clone)]
 struct BuildOS {
     os_family: String,
     os_version: String,
 }
 
+impl Display for BuildOS {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        writeln!(f, "BuildOS {} {}", self.os_family, self.os_version)
+    }
+}
+
 #[derive(Debug)]
 struct BuildJob {
     lang: BuildLang,
     os: BuildOS,
+    deploy: bool,
 }
+
+//impl Display for BuildJob {
+//    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+//        writeln!(
+//            f,
+//            "BuildJob {} {}  {} ({}) deploy: {}",
+//            self.os.os_family,
+//            self.os.os_version,
+//            self.lang.lang,
+//            self.lang.lang_variant,
+//            self.deploy
+//        )
+//    }
+//}
 
 impl ToString for BuildJob {
     fn to_string(&self) -> String {
@@ -167,6 +199,7 @@ fn main() -> Result<(), Error> {
                 build_queue.push(BuildJob {
                     lang: l.clone(),
                     os: o.clone(),
+                    deploy: true,
                 });
                 debug!("o {:?} - l {:?}", o, l);
             }
@@ -192,6 +225,7 @@ mod tests {
                 lang: "rust".to_string(),
                 lang_variant: "stable".to_string(),
             },
+            deploy: true,
         };
         let rc = uut.to_string();
         assert_eq!(&rc, "FreeBSD-11_2-rust-stable");
@@ -207,6 +241,7 @@ mod tests {
                 lang: "php".to_string(),
                 lang_variant: "7.3".to_string(),
             },
+            deploy: false,
         };
         let rc = uut.to_string();
         assert_eq!(&rc, "FreeBSD-12_0-php-7_3");

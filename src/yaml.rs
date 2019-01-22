@@ -1,4 +1,4 @@
-use super::{BuildLang, BuildOS};
+use super::{BuildJob, BuildLang, BuildOS};
 use crate::error::ParseError;
 use log::debug;
 use log::error;
@@ -137,6 +137,44 @@ pub(crate) fn get_update(h: &yaml_rust::yaml::Hash) -> Result<bool, ParseError> 
     }
 }
 
+fn get_no_deploy(h: &yaml_rust::yaml::Hash, jobs: &mut [BuildJob]) -> Result<(), ParseError> {
+    if let Some(k_no_deploy) = h.get(&yaml_rust::Yaml::from_str("no_deploy")) {
+        if let Some(v_no_deploy) = k_no_deploy.as_hash() {
+            if let Some(k_lang) = v_no_deploy.get(&yaml_rust::Yaml::from_str("rust")) {
+                if let Some(v_lang) = k_lang.as_vec() {
+                    for v in v_lang {
+                        if let Some(v_str) = v.as_str() {
+                            for j in jobs.iter_mut() {
+                                if j.lang.lang_variant == v_str {
+                                    j.deploy = false
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if let Some(k_os) = v_no_deploy.get(&yaml_rust::Yaml::from_str("FreeBSD")) {
+                if let Some(v_os) = k_os.as_vec() {
+                    for v in v_os {
+                        if let Some(v_str) = v.as_str() {
+                            for j in jobs.iter_mut() {
+                                if j.os.os_version == v_str {
+                                    j.deploy = false
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            return Err(ParseError::InvalidType {
+                name: "no_deploy".to_string(),
+            });
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -229,12 +267,8 @@ mod tests {
         let d = docs.first().unwrap();
         let h = d.as_hash().unwrap();
         let mut bl = get_build_lang("rust", &h).unwrap().into_iter();
-        assert!(bl
-            .find(|x| x.lang == "rust" && x.lang_variant == "nightly")
-            .is_some());
-        assert!(bl
-            .find(|x| x.lang == "rust" && x.lang_variant == "stable")
-            .is_some());
+        assert!(bl.any(|x| x.lang == "rust" && x.lang_variant == "nightly"));
+        assert!(bl.any(|x| x.lang == "rust" && x.lang_variant == "stable"));
         assert!(bl
             .find(|x| x.lang == "rust" && x.lang_variant == "beta")
             .is_none());
@@ -304,5 +338,95 @@ mod tests {
         let h = d.as_hash().unwrap();
         let bo_err = get_build_os("FreeBSD", &h).unwrap_err();
         assert!(bo_err.is_missingkey());
+    }
+    #[test]
+    fn test_get_no_deploy() {
+        let docs = yaml_rust::YamlLoader::load_from_str(
+            "no_deploy:\n  rust:\n    - nightly\n    - beta\n  FreeBSD:\n    - '11.2'",
+        )
+        .unwrap();
+        let d = docs.first().unwrap();
+        let h = d.as_hash().unwrap();
+        let mut jobs = Vec::new();
+        jobs.push(BuildJob {
+            lang: BuildLang {
+                lang: "rust".to_string(),
+                lang_variant: "stable".to_string(),
+            },
+            os: {
+                BuildOS {
+                    os_family: "FreeBSD".to_string(),
+                    os_version: "12.0".to_string(),
+                }
+            },
+            deploy: true,
+        });
+        jobs.push(BuildJob {
+            lang: BuildLang {
+                lang: "rust".to_string(),
+                lang_variant: "beta".to_string(),
+            },
+            os: {
+                BuildOS {
+                    os_family: "FreeBSD".to_string(),
+                    os_version: "12.0".to_string(),
+                }
+            },
+            deploy: true,
+        });
+        jobs.push(BuildJob {
+            lang: BuildLang {
+                lang: "rust".to_string(),
+                lang_variant: "nightly".to_string(),
+            },
+            os: {
+                BuildOS {
+                    os_family: "FreeBSD".to_string(),
+                    os_version: "12.0".to_string(),
+                }
+            },
+            deploy: true,
+        });
+        jobs.push(BuildJob {
+            lang: BuildLang {
+                lang: "rust".to_string(),
+                lang_variant: "stable".to_string(),
+            },
+            os: {
+                BuildOS {
+                    os_family: "FreeBSD".to_string(),
+                    os_version: "11.2".to_string(),
+                }
+            },
+            deploy: true,
+        });
+        jobs.push(BuildJob {
+            lang: BuildLang {
+                lang: "rust".to_string(),
+                lang_variant: "beta".to_string(),
+            },
+            os: {
+                BuildOS {
+                    os_family: "FreeBSD".to_string(),
+                    os_version: "11.2".to_string(),
+                }
+            },
+            deploy: true,
+        });
+        jobs.push(BuildJob {
+            lang: BuildLang {
+                lang: "rust".to_string(),
+                lang_variant: "nightly".to_string(),
+            },
+            os: {
+                BuildOS {
+                    os_family: "FreeBSD".to_string(),
+                    os_version: "11.2".to_string(),
+                }
+            },
+            deploy: true,
+        });
+        get_no_deploy(h, &mut jobs).unwrap();
+        assert_eq!(1, jobs.into_iter().filter(|x| x.deploy).count());
     }
 }
