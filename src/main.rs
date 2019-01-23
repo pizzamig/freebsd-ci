@@ -157,7 +157,7 @@ fn main() -> Result<(), Error> {
         project: opt.project_name.clone(),
     };
     let (rs, _) = get_status(&prj, &config.tokens.github)?;
-    println!("{:?}", rs);
+    println!("{}", rs);
     /* fetch the repo to read the .bsd-ci file */
     let path = crate::pot::fetch_git_in_fscomp(&prj, &rs, &opt)?;
 

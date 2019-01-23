@@ -4,6 +4,7 @@ use log::debug;
 use log::trace;
 use reqwest::header;
 use serde_derive::Deserialize;
+use std::fmt::Display;
 
 #[derive(Debug, Fail)]
 pub(crate) enum GithubError {
@@ -46,6 +47,16 @@ pub(crate) struct RepoStatus {
     pub url: url::Url,
     pub update_at: chrono::DateTime<chrono::offset::FixedOffset>,
     pub email: String,
+}
+
+impl Display for RepoStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        writeln!(
+            f,
+            "  url: {}\n  private: {}\n  archived: {}\n  locked: {}\n updated at: {}",
+            self.url, self.is_private, self.is_archived, self.is_locked, self.update_at
+        )
+    }
 }
 
 #[derive(Debug, Deserialize)]

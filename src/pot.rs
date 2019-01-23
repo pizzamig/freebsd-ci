@@ -2,6 +2,7 @@ use crate::github::RepoStatus;
 use crate::Opt;
 use crate::Project;
 use failure::{Error, Fail};
+use log::debug;
 use std::process::Command;
 use std::{thread, time};
 
@@ -196,18 +197,18 @@ pub(crate) fn fetch_git_in_fscomp(
     let fscomp_name = repo.to_string();
     let fscomp_path = get_fscomp_path(&fscomp_name)?;
     if is_fscomp_present(&fscomp_name) {
-        println!("fscomp {} found", fscomp_name);
+        debug!("fscomp {} found", fscomp_name);
         if config.force_flag {
             /* Delete the fscomp */
             destroy_fscomp(&fscomp_name)?;
-            println!("fscomp {} destroyed", fscomp_name);
+            debug!("fscomp {} destroyed", fscomp_name);
         } else {
-            return Err(Error::from(PotError::FscompAlreadyPresent {
-                name: fscomp_name,
-            }));
+            let e = Error::from(PotError::FscompAlreadyPresent { name: fscomp_name });
+            eprintln!("{}", e);
+            return Err(e);
         }
     } else {
-        println!("no fscomp {} found", fscomp_name);
+        debug!("no fscomp {} found", fscomp_name);
     }
     /* create the fscomp */
     let output = Command::new("pot")

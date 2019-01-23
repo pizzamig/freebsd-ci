@@ -37,14 +37,11 @@ fn generate_build_script(
         .to_str()
         .unwrap()
         .to_string();
-    println!("template_dir 1 : {}", template_dir);
     if &template_dir == "" {
         template_dir.push_str(".");
     }
-    println!("template_dir 1 : {}", template_dir);
     template_dir.push_str("/*");
-    println!("template_dir 3 : {}", template_dir);
-
+    debug!("template directory: {}", template_dir);
     // render the template
     let tera = match Tera::new(&template_dir) {
         Ok(t) => t,
