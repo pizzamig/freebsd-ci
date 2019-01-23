@@ -35,7 +35,7 @@ struct Opt {
         short = "-b",
         long = "--build",
         parse(from_os_str),
-        default_value = "./template/build.sh"
+        default_value = "./templates/build.sh"
     )]
     build_template: PathBuf,
     /// A Flag to force operations (i.e. remove fscomp or images with the same name)
