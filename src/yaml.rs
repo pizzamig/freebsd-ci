@@ -137,7 +137,10 @@ pub(crate) fn get_update(h: &yaml_rust::yaml::Hash) -> Result<bool, ParseError> 
     }
 }
 
-fn get_no_deploy(h: &yaml_rust::yaml::Hash, jobs: &mut [BuildJob]) -> Result<(), ParseError> {
+pub(crate) fn get_no_deploy(
+    h: &yaml_rust::yaml::Hash,
+    jobs: &mut [BuildJob],
+) -> Result<(), ParseError> {
     if let Some(k_no_deploy) = h.get(&yaml_rust::Yaml::from_str("no_deploy")) {
         if let Some(v_no_deploy) = k_no_deploy.as_hash() {
             if let Some(k_lang) = v_no_deploy.get(&yaml_rust::Yaml::from_str("rust")) {

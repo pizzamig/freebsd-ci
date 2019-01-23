@@ -7,7 +7,9 @@ mod yaml;
 use crate::builder::build;
 use crate::error::ParseError;
 use crate::github::{get_release_id, get_status};
-use crate::yaml::{get_build_lang, get_build_os, get_lang, get_os, get_update, get_yaml};
+use crate::yaml::{
+    get_build_lang, get_build_os, get_lang, get_no_deploy, get_os, get_update, get_yaml,
+};
 use failure::Error;
 use log::{debug, error, info};
 use std::fmt::Display;
@@ -204,6 +206,7 @@ fn main() -> Result<(), Error> {
                 debug!("o {:?} - l {:?}", o, l);
             }
         }
+        get_no_deploy(&h, &mut build_queue)?;
         println!("{:?}", build_queue);
     }
     build(&build_queue, &prj, &opt, &build_opt, &config.tokens.github)?;
