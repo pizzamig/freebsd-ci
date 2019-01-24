@@ -51,6 +51,10 @@ fn generate_build_script(
             }));
         }
     };
+    let tarball = format!(
+        "{}-{}-{}.tar.gz",
+        job.os.os_family, job.os.os_version, prj.project
+    );
     let mut context = Context::new();
     context.insert("update", &build_opt.update);
     context.insert("language", &job.lang.lang);
@@ -59,14 +63,24 @@ fn generate_build_script(
     context.insert("os_version", &job.os.os_version);
     context.insert("user", &prj.owner);
     context.insert("project", &prj.project);
+    context.insert("tarball", &tarball);
     if let Some(release_id) = build_opt.release_id {
         context.insert("upload", &job.deploy);
         context.insert("token", token);
         context.insert("release_id", &release_id);
+        if let Some(a) = build_opt.assets.iter().find(|x| x.name == tarball) {
+            context.insert("delete_asset", &true);
+            context.insert("asset_id", &a.id);
+        } else {
+            context.insert("delete_asset", &false);
+            context.insert("asset_id", &0);
+        }
     } else {
         context.insert("upload", &false);
         context.insert("token", "");
         context.insert("release_id", &0);
+        context.insert("delete_asset", &false);
+        context.insert("asset_id", &0);
     }
     let script = match tera.render("build.sh", &context) {
         Ok(s) => s,

@@ -6,7 +6,7 @@ mod pot;
 mod yaml;
 use crate::builder::build;
 use crate::error::ParseError;
-use crate::github::{get_release_id, get_status};
+use crate::github::{get_release_id, get_status, AssetJson};
 use crate::yaml::{
     get_build_lang, get_build_os, get_lang, get_no_deploy, get_os, get_update, get_yaml,
 };
@@ -134,6 +134,7 @@ impl ToString for Project {
 pub(crate) struct BuildOpt {
     pub(crate) update: bool,
     pub(crate) release_id: Option<u64>,
+    pub(crate) assets: Vec<AssetJson>,
 }
 
 fn main() -> Result<(), Error> {
@@ -165,11 +166,6 @@ fn main() -> Result<(), Error> {
 
     let mut build_queue = Vec::new();
     let mut build_opt = BuildOpt::default();
-    if let Some(tag_name) = &opt.tag_name {
-        if let Ok((release_id, _)) = get_release_id(&prj, tag_name, &config.tokens.github) {
-            build_opt.release_id = Some(release_id);
-        }
-    }
     let yaml_string = get_yaml(&path)?;
     let docs = YamlLoader::load_from_str(&yaml_string)?;
     for d in docs {
@@ -208,6 +204,12 @@ fn main() -> Result<(), Error> {
         }
         get_no_deploy(&h, &mut build_queue)?;
         println!("{:?}", build_queue);
+    }
+    if let Some(tag_name) = &opt.tag_name {
+        if let Ok((release_id, assets, _)) = get_release_id(&prj, tag_name, &config.tokens.github) {
+            build_opt.release_id = Some(release_id);
+            build_opt.assets = assets;
+        }
     }
     build(&build_queue, &prj, &opt, &build_opt, &config.tokens.github)?;
     Ok(())

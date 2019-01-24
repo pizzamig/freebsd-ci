@@ -20,7 +20,12 @@
 #   the github authorization token (valid only if upload is true)
 # release_id : u64 : {{ release_id }}
 #   the github release to upload the asset to
-
+# tarball : string : {{ tarball }}
+#   the tarball file name
+# delete_asset : bool : {{ delete_asset }}
+#   the current tarball is already present and has to be deleted before the upload
+# asset_id : u64 : {{ asset_id }}
+#   the asset_id to be deleted
 
 export HOME=/root
 export PATH=/root/.cargo/bin:/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin
@@ -46,9 +51,14 @@ fi
 if {{ upload }} ; then
 	cargo install --path . -f
 	tgt_dir="{{ os_family }}-{{ os_version }}-{{ project }}"
-	tarball="${tgt_dir}.tar.gz"
+	tarball="{{ tarball }}"
 	mv $HOME/.cargo/bin/{{ project }} $tgt_dir
 	tar zcf ${tarball} $tgt_dir
+	if {{ delete_asset }} ; then
+		curl -H "Authorization: bearer {{ token }}" \
+			-X DELETE \
+			https://api.github.com/repos/{{ user }}/{{ project }}/releases/assets/{{ asset_id }}
+	fi
 	curl -H "Authorization: bearer {{ token }}"\
 		-H "Content-Type: application/gzip" \
 		-X POST \
