@@ -60,7 +60,7 @@ fn generate_build_script(
     context.insert("user", &prj.owner);
     context.insert("project", &prj.project);
     if let Some(release_id) = build_opt.release_id {
-        context.insert("upload", &true);
+        context.insert("upload", &job.deploy);
         context.insert("token", token);
         context.insert("release_id", &release_id);
     } else {
