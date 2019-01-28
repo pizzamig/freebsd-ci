@@ -135,7 +135,7 @@ pub(crate) fn destroy_pot(pot_name: &str) -> Result<(), Error> {
         let start_timestamp = time::Instant::now();
         loop {
             if _destroy_pot(pot_name).is_ok() {
-                println!("Really destroyed pot {}", pot_name);
+                println!("Destroyed pot {}", pot_name);
                 break;
             }
             if start_timestamp.elapsed() < ten_minutes {

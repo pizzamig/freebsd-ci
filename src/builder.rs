@@ -111,6 +111,7 @@ fn generate_build_script(
 }
 
 fn run_build_script(pot_name: &str) -> Result<(), Error> {
+    println!("Start the build on {}", pot_name);
     let output = Command::new("pot")
         .args(&["set-cmd", "-p", &pot_name, "-c", "/root/build.sh"])
         .output()?;
@@ -136,6 +137,10 @@ fn run_build_script(pot_name: &str) -> Result<(), Error> {
     logerr_filename.push_str("_err.log");
     let mut logerr_file = File::create(&logerr_filename)?;
     logerr_file.write_all(&output.stderr)?;
+    println!(
+        "Build ended: log files {} - {}",
+        log_filename, logerr_filename
+    );
     Ok(())
 }
 

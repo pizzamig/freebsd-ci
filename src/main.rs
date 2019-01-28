@@ -91,19 +91,14 @@ struct BuildJob {
     deploy: bool,
 }
 
-//impl Display for BuildJob {
-//    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-//        writeln!(
-//            f,
-//            "BuildJob {} {}  {} ({}) deploy: {}",
-//            self.os.os_family,
-//            self.os.os_version,
-//            self.lang.lang,
-//            self.lang.lang_variant,
-//            self.deploy
-//        )
-//    }
-//}
+fn print_jobs(jv: &[BuildJob]) {
+    for j in jv {
+        println!(
+            "BuildJob {} {}  {} ({}) deploy: {}",
+            j.os.os_family, j.os.os_version, j.lang.lang, j.lang.lang_variant, j.deploy
+        );
+    }
+}
 
 impl ToString for BuildJob {
     fn to_string(&self) -> String {
@@ -203,7 +198,7 @@ fn main() -> Result<(), Error> {
             }
         }
         get_no_deploy(&h, &mut build_queue)?;
-        println!("{:?}", build_queue);
+        print_jobs(&build_queue);
     }
     if let Some(tag_name) = &opt.tag_name {
         if let Ok((release_id, assets, _)) = get_release_id(&prj, tag_name, &config.tokens.github) {
