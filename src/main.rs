@@ -92,9 +92,10 @@ struct BuildJob {
 }
 
 fn print_jobs(jv: &[BuildJob]) {
+    println!("\nJob queue of {} elements", jv.len());
     for j in jv {
         println!(
-            "BuildJob {} {}  {} ({}) deploy: {}",
+            "BuildJob: {} {}  {} ({}) deploy: {}",
             j.os.os_family, j.os.os_version, j.lang.lang, j.lang.lang_variant, j.deploy
         );
     }

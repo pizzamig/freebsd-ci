@@ -138,7 +138,7 @@ fn run_build_script(pot_name: &str) -> Result<(), Error> {
     let mut logerr_file = File::create(&logerr_filename)?;
     logerr_file.write_all(&output.stderr)?;
     println!(
-        "Build ended: log files {} - {}",
+        "Build ended; log files\n  - {}\n  - {}",
         log_filename, logerr_filename
     );
     Ok(())
@@ -162,7 +162,7 @@ pub(crate) fn build(
 
         // spawn the container
         let pot_name = spawn_builder_pot(&image_name, &fscomp_name, &opt)?;
-        println!("Spawned new pot: {}", pot_name);
+        println!("\nSpawned new pot: {}", pot_name);
         // run the build
         generate_build_script(&pot_name, b, prj, build_opt, &token, opt)?;
         if opt.render_build_flag {
