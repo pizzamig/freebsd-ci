@@ -47,7 +47,7 @@ impl Display for RepoStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         writeln!(
             f,
-            "  url: {}\n  private: {}\n  archived: {}\n  locked: {}\n updated at: {}",
+            "  url: {}\n  private: {}\n  archived: {}\n  locked: {}\n  updated at: {}",
             self.url, self.is_private, self.is_archived, self.is_locked, self.update_at
         )
     }
