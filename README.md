@@ -11,6 +11,11 @@ A FreeBSD 12.0 system can run a FreeBSD 11.2 container. A FreeBSD 11.2 system ca
 
 You can install rust via rustup (https://rustup.rs) or installing the package via `pkg`
 
+To install `freebsd-ci` you can clone this repo in your directory and then run:
+```console
+# cargo install --path .
+```
+
 FreeBSD 12.0 and the `latest` pkg repository are highly suggested.
 
 The `freebsd-ci` tool is based on `pot` containers. So to install it, you can run:
@@ -62,6 +67,13 @@ github = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 Github tokens can be obtained at the url https://github.com/settings/tokens/new and you need the `repo` and the `user` scope.
 
+
+## How to use it
+
+To test that you installation works, from the project directory, you can try to build my test project:
+```
+# freebsd-ci -U pizzamig -P ci-test
+```
 
 ### The build.sh template
 
