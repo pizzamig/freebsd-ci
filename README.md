@@ -70,13 +70,69 @@ Github tokens can be obtained at the url https://github.com/settings/tokens/new 
 
 ## How to use it
 
+The command line tools is called `freebsd-ci` and how to use it can be invoked in this way:
+
+```console
+# freebsd-ci --help
+USAGE:
+    freebsd-ci [FLAGS] [OPTIONS] --project <project_name> --user-name <user_name>
+
+FLAGS:
+    -f, --force                A Flag to force operations (i.e. remove fscomp or images with the same name)
+    -h, --help                 Prints help information
+    -B, --build-script-only    A Flag to rendert the build script only (on stdout)
+    -v, --verbose              Enable the verbose output No multiple occurrences are supported
+    -V, --version              Prints version information
+
+OPTIONS:
+    -b, --build <build_template>    The pathname to the build-sh template [default: ./templates/build.sh]
+    -c, --config <configfile>       The pathname to the toml configuration file [default: ./freebsd-ci.conf]
+    -P, --project <project_name>    Github project name
+    -T, --tag-name <tag_name>       Tag name: Using this option, a tag will be built. If a related release is found, the
+                                    artifacts will be uploaded
+    -U, --user-name <user_name>     Github user name
+```
+where `username` is the github username and `project-name` is the github project name and are manddatory.
+
 To test that you installation works, from the project directory, you can try to build my test project:
 ```
 # freebsd-ci -U pizzamig -P ci-test
 ```
 
 ### The build.sh template
+The build script template can be customized. in `templates/build.sh` there is a standard script with all template variables listed and documented.  
+If you want to test your script template you can use the `-b` option to point to your custom template and the flag -B that will show the output at the console, without executing the build (the project will be still downloaded to read the YAML file)
 
+### The deploy to github
+
+If the tool is invoked with the `-T` option, then the a tarball can be built and uploaded to github to the relative release.  
+The upload is performed by the build script and it can be disabled in the YAML file
+
+### The YAML file
+
+The YAML file has to be stored in the root directory with the name `.bsd-ci.yml`.  
+Here a commented example:
+```yaml
+os: FreeBSD		# the operating system
+
+FreeBSD:		# the version of the operating system
+    - '11.2'
+    - '12.0'
+
+update: true	# perform the toolchain/pkg upgrade before the build
+
+language: rust	# the project language
+
+rust:			# the language variant
+    - stable
+    - beta
+    - nightly
+
+no_deploy:		# in case of a tag (deploy) which version to exclude
+    rust:
+        - nightly
+        - beta
+```
 
 
 
