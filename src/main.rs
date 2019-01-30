@@ -11,6 +11,7 @@ use crate::yaml::{
     get_build_lang, get_build_os, get_lang, get_no_deploy, get_os, get_update, get_yaml,
 };
 use exitfailure::ExitFailure;
+use failure::ResultExt;
 use log::{debug, error, info};
 use std::fmt::Display;
 use std::path::PathBuf;
@@ -148,29 +149,44 @@ fn main() -> Result<(), ExitFailure> {
             .to_str()
             .unwrap_or("Filename not convertible")
     );
-    let config = crate::config::get_config(&opt.configfile)?;
+    let config = crate::config::get_config(&opt.configfile).with_context(|_| {
+        format!(
+            "could not parse the file {}",
+            opt.configfile.to_str().unwrap_or("file name not printable")
+        )
+    })?;
     let prj = Project {
         owner: opt.user_name.clone(),
         project: opt.project_name.clone(),
     };
-    let (rs, _) = get_status(&prj, &config.tokens.github)?;
+    let (rs, _) = get_status(&prj, &config.tokens.github).with_context(|_| {
+        format!(
+            "Fecth repository data failed for user {} project {}",
+            prj.owner, prj.project,
+        )
+    })?;
     println!("github repository information:\n{}", rs);
     /* fetch the repo to read the .bsd-ci file */
-    let path = crate::pot::fetch_git_in_fscomp(&prj, &rs, &opt)?;
+    let path = crate::pot::fetch_git_in_fscomp(&prj, &rs, &opt).with_context(|_| {
+        "Failed to create a ZFS dataset with the project in it\n Is pot installed?\n Are you root?"
+    })?;
 
     println!("Git repo fetched in {}", path);
 
     let mut build_queue = Vec::new();
     let mut build_opt = BuildOpt::default();
-    let yaml_string = get_yaml(&path)?;
-    let docs = YamlLoader::load_from_str(&yaml_string)?;
+    let yaml_string =
+        get_yaml(&path).with_context(|_| "Error accessing the yaml file in the project")?;
+    let docs = YamlLoader::load_from_str(&yaml_string)
+        .with_context(|_| "Error parsing the yaml file in the project")?;
     for d in docs {
         let h = d.into_hash().unwrap();
         debug!("{:?}", h);
-        let lang = get_lang(&h)?;
-        let os = get_os(&h)?;
+        let lang = get_lang(&h).with_context(|_| "Invalid YAML")?;
+        let os = get_os(&h).with_context(|_| "Invalid YAML")?;
         let build_lang = match lang.as_ref() {
-            "rust" => get_build_lang("rust", &h)?,
+            "rust" => get_build_lang("rust", &h)
+                .with_context(|_| format!("Ivalid YAML for language {}", lang))?,
             _ => {
                 return Err(ExitFailure::from(ParseError::GenericError {
                     msg: "language not supported".to_string(),
