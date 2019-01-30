@@ -10,7 +10,7 @@ use crate::github::{get_release_id, get_status, AssetJson};
 use crate::yaml::{
     get_build_lang, get_build_os, get_lang, get_no_deploy, get_os, get_update, get_yaml,
 };
-use failure::Error;
+use exitfailure::ExitFailure;
 use log::{debug, error, info};
 use std::fmt::Display;
 use std::path::PathBuf;
@@ -133,7 +133,7 @@ pub(crate) struct BuildOpt {
     pub(crate) assets: Vec<AssetJson>,
 }
 
-fn main() -> Result<(), Error> {
+fn main() -> Result<(), ExitFailure> {
     let opt = Opt::from_args();
     env_logger::try_init()?;
     debug!("BSD Continuous integration");
@@ -172,7 +172,7 @@ fn main() -> Result<(), Error> {
         let build_lang = match lang.as_ref() {
             "rust" => get_build_lang("rust", &h)?,
             _ => {
-                return Err(Error::from(ParseError::GenericError {
+                return Err(ExitFailure::from(ParseError::GenericError {
                     msg: "language not supported".to_string(),
                 }));
             }
@@ -180,7 +180,7 @@ fn main() -> Result<(), Error> {
         let build_os = match os.as_ref() {
             "FreeBSD" => get_build_os("FreeBSD", &h)?,
             _ => {
-                return Err(Error::from(ParseError::GenericError {
+                return Err(ExitFailure::from(ParseError::GenericError {
                     msg: "os not supported".to_string(),
                 }));
             }
