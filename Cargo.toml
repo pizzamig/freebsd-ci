@@ -2,7 +2,7 @@
 authors = ["Luca Pizzamiglio <pizzamig@FreeBSD.org>"]
 edition = "2018"
 name = "freebsd-ci"
-version = "0.1.0"
+version = "0.1.1"
 [dependencies]
 chrono = "0.4.6"
 derive_is_enum_variant = "0.1"
