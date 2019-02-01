@@ -52,6 +52,7 @@ if {{ upload }} ; then
 	cargo install --path . -f
 	tgt_dir="{{ os_family }}-{{ os_version }}-{{ project }}"
 	tarball="{{ tarball }}"
+	mkdir $tgt_dir
 	mv $HOME/.cargo/bin/{{ project }} $tgt_dir
 	tar zcf ${tarball} $tgt_dir
 	if {{ delete_asset }} ; then

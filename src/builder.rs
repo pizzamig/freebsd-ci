@@ -82,7 +82,7 @@ fn generate_build_script(
         context.insert("delete_asset", &false);
         context.insert("asset_id", &0);
     }
-    let script = match tera.render("build.sh", &context) {
+    let script = match tera.render(opt.build_template.to_str().unwrap(), &context) {
         Ok(s) => s,
         Err(e) => {
             return Err(Error::from(BuildError::TeraTemplateRenderingErr {
