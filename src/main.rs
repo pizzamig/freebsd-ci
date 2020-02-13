@@ -161,7 +161,7 @@ fn main() -> Result<(), ExitFailure> {
     };
     let (rs, _) = get_status(&prj, &config.tokens.github).with_context(|_| {
         format!(
-            "Fecth repository data failed for user {} project {}",
+            "Fetch repository data failed for user {} project {}",
             prj.owner, prj.project,
         )
     })?;

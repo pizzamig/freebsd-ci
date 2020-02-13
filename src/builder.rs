@@ -14,6 +14,8 @@ use tera::{Context, Tera};
 
 #[derive(Debug, Fail)]
 pub(crate) enum BuildError {
+    #[fail(display = "Build failed: {}", potname)]
+    BuildFailed { potname: String },
     #[fail(display = "Missing pot: {}", potname)]
     PotNotPresent { potname: String },
     #[fail(display = "Tera template parsing error: {}", msg)]
@@ -125,11 +127,6 @@ fn run_build_script(pot_name: &str) -> Result<(), Error> {
     }
 
     let output = Command::new("pot").args(&["start", &pot_name]).output()?;
-    if !output.status.success() {
-        return Err(Error::from(PotError::PotStartFailed {
-            name: pot_name.to_string(),
-        }));
-    }
     // write the log somewhere
     let mut log_filename = pot_name.to_string();
     log_filename.push_str(".log");
@@ -141,9 +138,15 @@ fn run_build_script(pot_name: &str) -> Result<(), Error> {
     let mut logerr_file = File::create(&logerr_filename)?;
     logerr_file.write_all(&output.stderr)?;
     println!(
-        "Build ended; log files\n  - {}\n  - {}",
+        "Build {}; log files\n  - {}\n  - {}",
+        match output.status.success() { true => "succeeded", false => "FAILED" },
         log_filename, logerr_filename
     );
+    if !output.status.success() {
+        return Err(Error::from(BuildError::BuildFailed {
+            potname: pot_name.to_string(),
+        }));
+    }
     Ok(())
 }
 
@@ -173,7 +176,7 @@ pub(crate) fn build(
             destroy_fscomp(&fscomp_name)?;
             return Ok(());
         }
-        run_build_script(&pot_name)?;
+        let build_result = run_build_script(&pot_name);
         // cleanup
         // // destroy the pot
         destroy_pot(&pot_name)?;
@@ -181,6 +184,8 @@ pub(crate) fn build(
         // // revert the fscomp
         revert_fscomp(&fscomp_name)?;
         debug!("Revert fscomp : {}", fscomp_name);
+
+        build_result?;
     }
     // destroy the fscomp
     destroy_fscomp(&fscomp_name)?;

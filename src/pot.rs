@@ -38,8 +38,8 @@ pub(crate) enum PotError {
     PotStopFailed { name: String },
     #[fail(display = "Pot clone failed on {} from parent {}", name, parent)]
     PotCloneFailed { name: String, parent: String },
-    #[fail(display = "Add fscomp {} to pot {} at {} failed", fscomp, pot, mnt)]
-    AddFscompFailed {
+    #[fail(display = "Mount fscomp {} to pot {} at {} failed", fscomp, pot, mnt)]
+    MountInFailed {
         pot: String,
         fscomp: String,
         mnt: String,
@@ -289,7 +289,7 @@ pub(crate) fn spawn_builder_pot(
         }
     }
     let output = Command::new("pot")
-        .args(&["clone", "-f", "-P", &parent_pot, "-p", &pot_name])
+        .args(&["clone", "-F", "-P", &parent_pot, "-p", &pot_name])
         .output()?;
     if !output.status.success() {
         return Err(Error::from(PotError::PotCloneFailed {
@@ -300,7 +300,7 @@ pub(crate) fn spawn_builder_pot(
     // attach the fscomp to the cloned pot
     let output = Command::new("pot")
         .args(&[
-            "add-fscomp",
+            "mount-in",
             "-p",
             &pot_name,
             "-f",
@@ -310,7 +310,7 @@ pub(crate) fn spawn_builder_pot(
         ])
         .output()?;
     if !output.status.success() {
-        return Err(Error::from(PotError::AddFscompFailed {
+        return Err(Error::from(PotError::MountInFailed {
             pot: pot_name,
             fscomp: fscomp_name.to_string(),
             mnt: "/mnt".to_string(),
